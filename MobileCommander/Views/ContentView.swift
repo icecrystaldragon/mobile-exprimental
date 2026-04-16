@@ -24,6 +24,7 @@ struct ContentView: View {
 // MARK: - Developer Tab View
 
 struct DevTabView: View {
+    @EnvironmentObject var store: DataStore
     @Binding var appMode: String
     @State private var selectedTab: DevTab = .dashboard
 
@@ -35,6 +36,14 @@ struct DevTabView: View {
         case settings = "Settings"
     }
 
+    private var reviewCount: Int {
+        store.tasks.filter { $0.effectiveStatus == .needsReview }.count
+    }
+
+    private var attentionCount: Int {
+        store.tasks.filter { $0.status == .failed || $0.status == .blocked }.count
+    }
+
     var body: some View {
         TabView(selection: $selectedTab) {
             DevDashboardView()
@@ -43,6 +52,7 @@ struct DevTabView: View {
                     Text("Dashboard")
                 }
                 .tag(DevTab.dashboard)
+                .badge(attentionCount + reviewCount)
 
             DevTaskListView()
                 .tabItem {
@@ -50,6 +60,7 @@ struct DevTabView: View {
                     Text("Tasks")
                 }
                 .tag(DevTab.tasks)
+                .badge(reviewCount)
 
             DevWorkersView()
                 .tabItem {
@@ -79,6 +90,7 @@ struct DevTabView: View {
 // MARK: - Owner Tab View
 
 struct OwnerTabView: View {
+    @EnvironmentObject var store: DataStore
     @Binding var appMode: String
     @State private var selectedTab: OwnerTab = .home
 
@@ -86,6 +98,10 @@ struct OwnerTabView: View {
         case home = "Home"
         case create = "New Task"
         case settings = "Settings"
+    }
+
+    private var attentionCount: Int {
+        store.tasks.filter { $0.status == .failed || $0.status == .blocked || $0.effectiveStatus == .needsReview }.count
     }
 
     var body: some View {
@@ -96,6 +112,7 @@ struct OwnerTabView: View {
                     Text("Home")
                 }
                 .tag(OwnerTab.home)
+                .badge(attentionCount)
 
             OwnerTaskCreateView()
                 .tabItem {

@@ -11,6 +11,8 @@ struct OwnerTaskDetailView: View {
                 descriptionSection
                 detailsSection
 
+                followUpSection
+
                 if task.status == .failed || task.status == .blocked {
                     retrySection
                 }
@@ -132,6 +134,30 @@ struct OwnerTaskDetailView: View {
             Text(value)
                 .font(.commanderCaption)
                 .foregroundColor(.commanderText)
+        }
+    }
+
+    // MARK: - Follow Up
+
+    @ViewBuilder
+    private var followUpSection: some View {
+        if let followUp = task.followUp, !followUp.isEmpty {
+            CommanderCard {
+                VStack(alignment: .leading, spacing: 8) {
+                    HStack(spacing: 6) {
+                        Image(systemName: "doc.text.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.commanderGreen)
+                        Text("Summary")
+                            .font(.commanderCaptionMedium)
+                            .foregroundColor(.commanderGreen)
+                    }
+                    Text(followUp)
+                        .font(.commanderBody)
+                        .foregroundColor(.commanderText)
+                        .textSelection(.enabled)
+                }
+            }
         }
     }
 

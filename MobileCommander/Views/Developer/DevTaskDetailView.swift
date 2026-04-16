@@ -9,13 +9,13 @@ struct DevTaskDetailView: View {
     @State private var chatInput = ""
     @State private var selectedTab: DetailTab = .output
     @State private var autoScroll = true
-
-    private var outputListener: ListenerRegistration?
-    private var chatListener: ListenerRegistration?
+    @State private var outputListener: ListenerRegistration?
+    @State private var chatListener: ListenerRegistration?
 
     enum DetailTab: String, CaseIterable {
         case output = "Output"
         case chat = "Chat"
+        case followUp = "Follow Up"
         case info = "Info"
     }
 
@@ -39,6 +39,20 @@ struct DevTaskDetailView: View {
                         }
                     }
 
+                    if task.effectiveStatus == .needsReview {
+                        Button {
+                            Task { try? await store.approveTask(task) }
+                        } label: {
+                            Label("Approve", systemImage: "checkmark.seal")
+                        }
+
+                        Button {
+                            Task { try? await store.requestChanges(task) }
+                        } label: {
+                            Label("Request Changes", systemImage: "arrow.uturn.backward")
+                        }
+                    }
+
                     Button {
                         Task {
                             try? await store.updateTaskStatus(task, status: .done)
@@ -53,6 +67,14 @@ struct DevTaskDetailView: View {
                         }
                     } label: {
                         Label("Mark Failed", systemImage: "xmark.circle")
+                    }
+
+                    Divider()
+
+                    Button(role: .destructive) {
+                        Task { try? await store.deleteTask(task) }
+                    } label: {
+                        Label("Delete Task", systemImage: "trash")
                     }
                 } label: {
                     Image(systemName: "ellipsis.circle")
@@ -156,6 +178,8 @@ struct DevTaskDetailView: View {
             outputView
         case .chat:
             chatView
+        case .followUp:
+            followUpView
         case .info:
             infoView
         }
@@ -314,6 +338,28 @@ struct DevTaskDetailView: View {
         .background(Color.commanderSurface)
     }
 
+    // MARK: - Follow Up View
+
+    private var followUpView: some View {
+        ScrollView {
+            if let followUp = task.followUp, !followUp.isEmpty {
+                VStack(alignment: .leading, spacing: 12) {
+                    Text(followUp)
+                        .font(.commanderBody)
+                        .foregroundColor(.commanderText)
+                        .textSelection(.enabled)
+                }
+                .padding(16)
+            } else {
+                EmptyStateView(
+                    icon: "doc.text",
+                    title: "No follow-up notes",
+                    subtitle: "Follow-up notes will appear here after the task completes"
+                )
+            }
+        }
+    }
+
     // MARK: - Info View
 
     private var infoView: some View {
@@ -424,22 +470,23 @@ struct DevTaskDetailView: View {
     }
 
     private func startListeners() {
-        let outputReg = store.listenToOutput(taskId: task.id) { chunks in
+        outputListener = store.listenToOutput(taskId: task.id) { chunks in
             Task { @MainActor in
                 self.outputChunks = chunks
             }
         }
-        let chatReg = store.listenToChat(taskId: task.id) { messages in
+        chatListener = store.listenToChat(taskId: task.id) { messages in
             Task { @MainActor in
                 self.chatMessages = messages
             }
         }
-        _ = outputReg
-        _ = chatReg
     }
 
     private func stopListeners() {
-        // Listeners will be cleaned up when the view deallocates
+        outputListener?.remove()
+        chatListener?.remove()
+        outputListener = nil
+        chatListener = nil
     }
 }
 

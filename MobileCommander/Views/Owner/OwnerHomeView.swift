@@ -13,6 +13,7 @@ struct OwnerHomeView: View {
 
     private var completedTasks: [CommanderTask] {
         store.tasks.filter { $0.status == .done }
+            .sorted { ($0.completedAt ?? .distantPast) > ($1.completedAt ?? .distantPast) }
     }
 
     private var needsAttention: [CommanderTask] {
@@ -23,36 +24,43 @@ struct OwnerHomeView: View {
         NavigationView {
             ScrollView {
                 VStack(alignment: .leading, spacing: 20) {
-                    statusCards
+                    statusStrip
                     activeSection
                     attentionSection
+                    pendingSection
                     recentlyCompleted
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 32)
             }
             .background(Color.commanderBg)
+            .refreshable {
+                await store.refresh()
+            }
             .safeAreaInset(edge: .top) {
                 ownerHeader
             }
         }
     }
 
-    // MARK: - Header
+    // MARK: - Header (palmr-inspired sticky header)
 
     private var ownerHeader: some View {
-        VStack(alignment: .leading, spacing: 8) {
-            HStack {
-                VStack(alignment: .leading, spacing: 4) {
-                    HStack(spacing: 8) {
-                        Image(systemName: "terminal.fill")
-                            .font(.system(size: 18))
-                            .foregroundColor(.commanderOrange)
-                        Text("Commander")
-                            .font(.commanderHeadline)
-                            .foregroundColor(.commanderText)
-                    }
+        VStack(spacing: 0) {
+            HStack(spacing: 12) {
+                ZStack {
+                    Circle()
+                        .fill(Color.commanderOrange.opacity(0.15))
+                        .frame(width: 36, height: 36)
+                    Image(systemName: "terminal.fill")
+                        .font(.system(size: 16))
+                        .foregroundColor(.commanderOrange)
+                }
 
+                VStack(alignment: .leading, spacing: 2) {
+                    Text("Commander")
+                        .font(.commanderHeadline)
+                        .foregroundColor(.commanderText)
                     HStack(spacing: 6) {
                         LiveDot()
                         Text(statusMessage)
@@ -60,10 +68,25 @@ struct OwnerHomeView: View {
                             .foregroundColor(.commanderSecondary)
                     }
                 }
+
                 Spacer()
+
+                if store.totalCost > 0 {
+                    VStack(alignment: .trailing, spacing: 2) {
+                        Text(String(format: "$%.2f", store.totalCost))
+                            .font(.commanderCaptionMedium)
+                            .foregroundColor(.commanderOrange)
+                        Text("total cost")
+                            .font(.commanderSmall)
+                            .foregroundColor(.commanderMuted)
+                    }
+                }
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 12)
+
+            Divider()
+                .background(Color.commanderBorder)
         }
         .background(Color.commanderSurface)
     }
@@ -72,62 +95,70 @@ struct OwnerHomeView: View {
         let running = activeTasks.count
         let attention = needsAttention.count
         if attention > 0 {
-            return "\(attention) item\(attention == 1 ? "" : "s") need\(attention == 1 ? "s" : "") your attention"
+            return "\(attention) item\(attention == 1 ? "" : "s") need\(attention == 1 ? "s" : "") attention"
         }
         if running > 0 {
             return "\(running) task\(running == 1 ? "" : "s") running"
         }
-        return "All quiet — no active tasks"
+        return "All quiet"
     }
 
-    // MARK: - Status Cards
+    // MARK: - Status Strip (palmr pillar-strip inspired)
 
-    private var statusCards: some View {
-        HStack(spacing: 10) {
-            ownerStatCard(
+    private var statusStrip: some View {
+        HStack(spacing: 8) {
+            statusPill(
                 icon: "play.circle.fill",
-                label: "Running",
+                label: "Active",
                 value: activeTasks.count,
                 color: .commanderAmber
             )
-            ownerStatCard(
+            statusPill(
+                icon: "clock",
+                label: "Queued",
+                value: pendingTasks.count,
+                color: .commanderSecondary
+            )
+            statusPill(
                 icon: "checkmark.circle.fill",
-                label: "Completed",
+                label: "Done",
                 value: completedTasks.count,
                 color: .commanderGreen
             )
-            ownerStatCard(
-                icon: "exclamationmark.circle.fill",
-                label: "Attention",
-                value: needsAttention.count,
-                color: needsAttention.isEmpty ? .commanderSecondary : .commanderRed
-            )
+            if !needsAttention.isEmpty {
+                statusPill(
+                    icon: "exclamationmark.triangle.fill",
+                    label: "Attention",
+                    value: needsAttention.count,
+                    color: .commanderRed
+                )
+            }
         }
     }
 
-    private func ownerStatCard(icon: String, label: String, value: Int, color: Color) -> some View {
-        VStack(spacing: 8) {
+    private func statusPill(icon: String, label: String, value: Int, color: Color) -> some View {
+        HStack(spacing: 6) {
             Image(systemName: icon)
-                .font(.system(size: 22))
+                .font(.system(size: 11))
                 .foregroundColor(color)
             Text("\(value)")
-                .font(.system(size: 26, weight: .bold))
+                .font(.commanderCaptionMedium)
                 .foregroundColor(.commanderText)
             Text(label)
                 .font(.commanderSmall)
-                .foregroundColor(.commanderSecondary)
+                .foregroundColor(.commanderMuted)
         }
-        .frame(maxWidth: .infinity)
-        .padding(.vertical, 16)
+        .padding(.horizontal, 10)
+        .padding(.vertical, 8)
         .background(Color.commanderSurface)
-        .cornerRadius(14)
+        .cornerRadius(20)
         .overlay(
-            RoundedRectangle(cornerRadius: 14)
+            RoundedRectangle(cornerRadius: 20)
                 .stroke(Color.commanderBorder, lineWidth: 0.5)
         )
     }
 
-    // MARK: - Active Tasks
+    // MARK: - Active Tasks (palmr RunningTaskCard inspired)
 
     @ViewBuilder
     private var activeSection: some View {
@@ -139,7 +170,7 @@ struct OwnerHomeView: View {
 
                 ForEach(activeTasks) { task in
                     NavigationLink(destination: OwnerTaskDetailView(task: task)) {
-                        activeTaskCard(task)
+                        runningTaskCard(task)
                     }
                     .buttonStyle(.plain)
                 }
@@ -147,38 +178,62 @@ struct OwnerHomeView: View {
         }
     }
 
-    private func activeTaskCard(_ task: CommanderTask) -> some View {
-        CommanderAccentCard {
-            VStack(alignment: .leading, spacing: 8) {
-                HStack {
-                    StatusBadge(status: .running)
-                    Spacer()
-                    if task.status == .running {
-                        LiveDot()
-                    }
-                }
-
-                Text(task.task)
-                    .font(.commanderSubhead)
-                    .foregroundColor(.commanderText)
-                    .lineLimit(2)
-
-                HStack(spacing: 8) {
-                    Label(task.project, systemImage: "folder")
+    private func runningTaskCard(_ task: CommanderTask) -> some View {
+        VStack(alignment: .leading, spacing: 10) {
+            HStack {
+                HStack(spacing: 6) {
+                    LiveDot()
+                    Text("NOW RUNNING")
                         .font(.commanderSmall)
-                        .foregroundColor(.commanderOrange)
+                        .foregroundColor(.commanderAmber)
+                }
+                Spacer()
+                if let duration = task.durationString {
+                    Text(duration)
+                        .font(.commanderMonoSmall)
+                        .foregroundColor(.commanderMuted)
+                }
+            }
 
-                    if let duration = task.durationString {
-                        Label(duration, systemImage: "clock")
-                            .font(.commanderSmall)
-                            .foregroundColor(.commanderSecondary)
-                    }
+            Text(task.task)
+                .font(.commanderSubhead)
+                .foregroundColor(.commanderText)
+                .lineLimit(2)
+
+            HStack(spacing: 8) {
+                Label(task.project, systemImage: "folder.fill")
+                    .font(.commanderSmall)
+                    .foregroundColor(.commanderOrange)
+
+                if let worker = task.claimedBy {
+                    Label(worker, systemImage: "server.rack")
+                        .font(.commanderSmall)
+                        .foregroundColor(.commanderMuted)
+                }
+            }
+
+            if let cost = task.costUsd, cost > 0 {
+                HStack {
+                    Text("Cost so far")
+                        .font(.commanderSmall)
+                        .foregroundColor(.commanderMuted)
+                    Spacer()
+                    Text(String(format: "$%.2f", cost))
+                        .font(.commanderMonoSmall)
+                        .foregroundColor(.commanderSecondary)
                 }
             }
         }
+        .padding(16)
+        .background(Color(red: 0.08, green: 0.08, blue: 0.12))
+        .cornerRadius(14)
+        .overlay(
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(Color.commanderOrange.opacity(0.3), lineWidth: 1)
+        )
     }
 
-    // MARK: - Needs Attention
+    // MARK: - Needs Attention (urgent banner inspired by palmr)
 
     @ViewBuilder
     private var attentionSection: some View {
@@ -191,6 +246,14 @@ struct OwnerHomeView: View {
                     Text("Needs Your Attention")
                         .font(.commanderCaptionMedium)
                         .foregroundColor(.commanderRed)
+                    Spacer()
+                    Text("\(needsAttention.count)")
+                        .font(.commanderSmall)
+                        .foregroundColor(.commanderRed)
+                        .padding(.horizontal, 8)
+                        .padding(.vertical, 2)
+                        .background(Color.commanderRedDim)
+                        .cornerRadius(10)
                 }
 
                 ForEach(needsAttention) { task in
@@ -240,6 +303,62 @@ struct OwnerHomeView: View {
         }
     }
 
+    // MARK: - Pending Queue
+
+    @ViewBuilder
+    private var pendingSection: some View {
+        if !pendingTasks.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Up Next")
+                    .font(.commanderCaptionMedium)
+                    .foregroundColor(.commanderSecondary)
+
+                ForEach(pendingTasks) { task in
+                    NavigationLink(destination: OwnerTaskDetailView(task: task)) {
+                        HStack(spacing: 10) {
+                            Image(systemName: "clock")
+                                .font(.system(size: 14))
+                                .foregroundColor(.commanderMuted)
+
+                            VStack(alignment: .leading, spacing: 2) {
+                                Text(task.task)
+                                    .font(.commanderBody)
+                                    .foregroundColor(.commanderText)
+                                    .lineLimit(1)
+                                HStack(spacing: 6) {
+                                    Text(task.project)
+                                        .font(.commanderSmall)
+                                        .foregroundColor(.commanderOrange)
+                                    Text("Priority \(task.priority)")
+                                        .font(.commanderSmall)
+                                        .foregroundColor(.commanderMuted)
+                                }
+                            }
+
+                            Spacer()
+
+                            Text("Queued")
+                                .font(.commanderSmall)
+                                .foregroundColor(.commanderSecondary)
+                                .padding(.horizontal, 8)
+                                .padding(.vertical, 3)
+                                .background(Color.commanderSurface)
+                                .cornerRadius(6)
+                        }
+                        .padding(12)
+                        .background(Color.commanderSurface)
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.commanderBorder, lineWidth: 0.5)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
     // MARK: - Recently Completed
 
     @ViewBuilder
@@ -275,6 +394,11 @@ struct OwnerHomeView: View {
                     Text(task.project)
                         .font(.commanderSmall)
                         .foregroundColor(.commanderOrange)
+                    if let cost = task.costString {
+                        Text(cost)
+                            .font(.commanderSmall)
+                            .foregroundColor(.commanderMuted)
+                    }
                     if let time = task.completedAt {
                         Text(time.commanderRelative)
                             .font(.commanderSmall)
@@ -284,6 +408,12 @@ struct OwnerHomeView: View {
             }
 
             Spacer()
+
+            if task.effectiveStatus == .needsReview {
+                Image(systemName: "eye.circle.fill")
+                    .font(.system(size: 14))
+                    .foregroundColor(.commanderPurple)
+            }
 
             Image(systemName: "chevron.right")
                 .font(.system(size: 10))

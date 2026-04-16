@@ -108,6 +108,7 @@ struct CommanderTask: Identifiable, Codable {
     var reviewStatus: ReviewStatus
     var testStatus: String?
     var deployStatus: String?
+    var followUp: String?
     var createdAt: Date?
     var startedAt: Date?
     var completedAt: Date?
@@ -230,6 +231,8 @@ struct ActivityEvent: Identifiable, Codable {
         case "chat_message_sent": return "bubble.left.fill"
         case "task_status_changed": return "arrow.triangle.2.circlepath"
         case "task_deleted": return "trash.fill"
+        case "task_approved": return "checkmark.seal.fill"
+        case "task_changes_requested": return "arrow.uturn.backward.circle.fill"
         default: return "circle.fill"
         }
     }
@@ -241,6 +244,8 @@ struct ActivityEvent: Identifiable, Codable {
         case "chat_message_sent": return .commanderPurple
         case "task_status_changed": return .commanderOrange
         case "task_deleted": return .commanderRed
+        case "task_approved": return .commanderGreen
+        case "task_changes_requested": return .commanderAmber
         default: return .commanderSecondary
         }
     }

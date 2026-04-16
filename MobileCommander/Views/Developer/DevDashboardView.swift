@@ -35,6 +35,9 @@ struct DevDashboardView: View {
             .sheet(isPresented: $showCreateTask) {
                 DevTaskCreateView()
             }
+            .refreshable {
+                await store.refresh()
+            }
         }
     }
 

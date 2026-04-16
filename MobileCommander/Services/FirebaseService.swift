@@ -67,6 +67,12 @@ class DataStore: ObservableObject {
         listenToActivity()
     }
 
+    func refresh() async {
+        stopListening()
+        startListening()
+        try? await Task.sleep(nanoseconds: 500_000_000)
+    }
+
     func stopListening() {
         taskListener?.remove()
         workerListener?.remove()
@@ -210,6 +216,58 @@ class DataStore: ObservableObject {
         ])
     }
 
+    func approveTask(_ task: CommanderTask) async throws {
+        let q = db.collection("commander_tasks")
+            .whereField("num_id", isEqualTo: task.numId)
+            .limit(to: 1)
+        let snap = try await q.getDocuments()
+        guard let doc = snap.documents.first else { return }
+
+        try await doc.reference.updateData([
+            "review_status": "approved",
+            "updated_at": FieldValue.serverTimestamp(),
+        ])
+
+        try await logActivity("task_approved", details: [
+            "task_num_id": "\(task.numId)",
+            "project": task.project,
+        ])
+    }
+
+    func requestChanges(_ task: CommanderTask) async throws {
+        let q = db.collection("commander_tasks")
+            .whereField("num_id", isEqualTo: task.numId)
+            .limit(to: 1)
+        let snap = try await q.getDocuments()
+        guard let doc = snap.documents.first else { return }
+
+        try await doc.reference.updateData([
+            "review_status": "changes_requested",
+            "updated_at": FieldValue.serverTimestamp(),
+        ])
+
+        try await logActivity("task_changes_requested", details: [
+            "task_num_id": "\(task.numId)",
+            "project": task.project,
+        ])
+    }
+
+    func deleteTask(_ task: CommanderTask) async throws {
+        let q = db.collection("commander_tasks")
+            .whereField("num_id", isEqualTo: task.numId)
+            .limit(to: 1)
+        let snap = try await q.getDocuments()
+        guard let doc = snap.documents.first else { return }
+
+        try await doc.reference.delete()
+
+        try await logActivity("task_deleted", details: [
+            "task_num_id": "\(task.numId)",
+            "project": task.project,
+            "task_name": task.task,
+        ])
+    }
+
     func sendChatMessage(taskId: String, content: String) async throws {
         let data: [String: Any] = [
             "role": "user",
@@ -293,6 +351,7 @@ class DataStore: ObservableObject {
             reviewStatus: ReviewStatus(rawValue: d["review_status"] as? String ?? "") ?? .none,
             testStatus: d["test_status"] as? String,
             deployStatus: d["deploy_status"] as? String,
+            followUp: d["follow_up"] as? String,
             createdAt: (d["created_at"] as? Timestamp)?.dateValue(),
             startedAt: (d["started_at"] as? Timestamp)?.dateValue(),
             completedAt: (d["completed_at"] as? Timestamp)?.dateValue()

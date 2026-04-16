@@ -8,6 +8,13 @@ struct OwnerTaskCreateView: View {
     @State private var showSuccess = false
     @State private var errorMessage: String?
 
+    private let quickTemplates = [
+        ("Fix a bug", "bug.fill", "There's a bug where [describe what's broken]. It should [describe expected behavior] instead."),
+        ("Add a feature", "plus.rectangle.fill", "I'd like to add [describe the feature]. It should [describe how it works]."),
+        ("Update content", "doc.text.fill", "Update the [page/section] to say [new content]. Currently it says [old content]."),
+        ("Improve design", "paintbrush.fill", "The [page/component] needs visual improvements: [describe what to change]."),
+    ]
+
     var body: some View {
         NavigationView {
             ScrollView {
@@ -34,7 +41,7 @@ struct OwnerTaskCreateView: View {
             Text("New Task")
                 .font(.commanderTitle)
                 .foregroundColor(.commanderText)
-            Text("Describe what you need done and we'll take care of it.")
+            Text("Describe what you need done and a worker will handle it.")
                 .font(.commanderCaption)
                 .foregroundColor(.commanderSecondary)
         }
@@ -59,90 +66,28 @@ struct OwnerTaskCreateView: View {
                 .cornerRadius(10)
             }
 
-            // Project Picker
-            VStack(alignment: .leading, spacing: 8) {
-                Text("Project")
-                    .font(.commanderSubhead)
-                    .foregroundColor(.commanderText)
-                Text("Which project is this for?")
-                    .font(.commanderCaption)
-                    .foregroundColor(.commanderSecondary)
+            projectPicker
+            templateSection
+            descriptionField
+            submitButton
+        }
+    }
 
-                if store.projectNames.isEmpty {
-                    TextField("Project name", text: $selectedProject)
-                        .font(.commanderBody)
-                        .foregroundColor(.commanderText)
-                        .padding(14)
-                        .background(Color.commanderSurface)
-                        .cornerRadius(12)
-                        .overlay(
-                            RoundedRectangle(cornerRadius: 12)
-                                .stroke(Color.commanderBorder, lineWidth: 0.5)
-                        )
-                } else {
-                    VStack(spacing: 6) {
-                        ForEach(store.projectNames, id: \.self) { project in
-                            Button {
-                                withAnimation(.easeInOut(duration: 0.15)) {
-                                    selectedProject = project
-                                }
-                            } label: {
-                                HStack {
-                                    Image(systemName: "folder.fill")
-                                        .font(.system(size: 14))
-                                        .foregroundColor(.commanderOrange)
-                                    Text(project)
-                                        .font(.commanderBody)
-                                        .foregroundColor(.commanderText)
-                                    Spacer()
-                                    if selectedProject == project {
-                                        Image(systemName: "checkmark.circle.fill")
-                                            .foregroundColor(.commanderOrange)
-                                    }
-                                }
-                                .padding(14)
-                                .background(selectedProject == project ? Color.commanderOrangeDim : Color.commanderSurface)
-                                .cornerRadius(12)
-                                .overlay(
-                                    RoundedRectangle(cornerRadius: 12)
-                                        .stroke(
-                                            selectedProject == project ? Color.commanderOrange.opacity(0.4) : Color.commanderBorder,
-                                            lineWidth: 0.5
-                                        )
-                                )
-                            }
-                            .buttonStyle(.plain)
-                        }
+    // MARK: - Project Picker
 
-                        // Custom project option
-                        TextField("Or type a new project name", text: $selectedProject)
-                            .font(.commanderBody)
-                            .foregroundColor(.commanderText)
-                            .padding(14)
-                            .background(Color.commanderSurface)
-                            .cornerRadius(12)
-                            .overlay(
-                                RoundedRectangle(cornerRadius: 12)
-                                    .stroke(Color.commanderBorder, lineWidth: 0.5)
-                            )
-                    }
-                }
-            }
+    private var projectPicker: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Project")
+                .font(.commanderSubhead)
+                .foregroundColor(.commanderText)
+            Text("Which project is this for?")
+                .font(.commanderCaption)
+                .foregroundColor(.commanderSecondary)
 
-            // Description
-            VStack(alignment: .leading, spacing: 8) {
-                Text("What do you need?")
-                    .font(.commanderSubhead)
-                    .foregroundColor(.commanderText)
-                Text("Be specific about what you want changed or added.")
-                    .font(.commanderCaption)
-                    .foregroundColor(.commanderSecondary)
-
-                TextEditor(text: $taskDescription)
+            if store.projectNames.isEmpty {
+                TextField("Project name", text: $selectedProject)
                     .font(.commanderBody)
                     .foregroundColor(.commanderText)
-                    .scrollContentBackground(.hidden)
-                    .frame(minHeight: 150)
                     .padding(14)
                     .background(Color.commanderSurface)
                     .cornerRadius(12)
@@ -150,35 +95,152 @@ struct OwnerTaskCreateView: View {
                         RoundedRectangle(cornerRadius: 12)
                             .stroke(Color.commanderBorder, lineWidth: 0.5)
                     )
+            } else {
+                ScrollView(.horizontal, showsIndicators: false) {
+                    HStack(spacing: 8) {
+                        ForEach(store.projectNames, id: \.self) { project in
+                            Button {
+                                withAnimation(.easeInOut(duration: 0.15)) {
+                                    selectedProject = selectedProject == project ? "" : project
+                                }
+                            } label: {
+                                HStack(spacing: 6) {
+                                    Image(systemName: "folder.fill")
+                                        .font(.system(size: 12))
+                                    Text(project)
+                                        .font(.commanderCaptionMedium)
+                                }
+                                .foregroundColor(selectedProject == project ? .white : .commanderSecondary)
+                                .padding(.horizontal, 14)
+                                .padding(.vertical, 10)
+                                .background(selectedProject == project ? Color.commanderOrange : Color.commanderSurface)
+                                .cornerRadius(20)
+                                .overlay(
+                                    RoundedRectangle(cornerRadius: 20)
+                                        .stroke(
+                                            selectedProject == project ? Color.commanderOrange : Color.commanderBorder,
+                                            lineWidth: 0.5
+                                        )
+                                )
+                            }
+                            .buttonStyle(.plain)
+                        }
+                    }
+                }
 
-                Text("Examples: \"Fix the class booking timezone bug\" or \"Add a member check-in screen with QR code support\"")
+                TextField("Or type a new project name", text: $selectedProject)
+                    .font(.commanderBody)
+                    .foregroundColor(.commanderText)
+                    .padding(14)
+                    .background(Color.commanderSurface)
+                    .cornerRadius(12)
+                    .overlay(
+                        RoundedRectangle(cornerRadius: 12)
+                            .stroke(Color.commanderBorder, lineWidth: 0.5)
+                    )
+            }
+        }
+    }
+
+    // MARK: - Quick Templates
+
+    private var templateSection: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("What kind of task?")
+                .font(.commanderSubhead)
+                .foregroundColor(.commanderText)
+
+            LazyVGrid(columns: [
+                GridItem(.flexible(), spacing: 8),
+                GridItem(.flexible(), spacing: 8),
+            ], spacing: 8) {
+                ForEach(quickTemplates, id: \.0) { template in
+                    Button {
+                        if taskDescription.isEmpty {
+                            taskDescription = template.2
+                        }
+                    } label: {
+                        HStack(spacing: 8) {
+                            Image(systemName: template.1)
+                                .font(.system(size: 14))
+                                .foregroundColor(.commanderOrange)
+                            Text(template.0)
+                                .font(.commanderCaptionMedium)
+                                .foregroundColor(.commanderText)
+                        }
+                        .frame(maxWidth: .infinity, alignment: .leading)
+                        .padding(12)
+                        .background(Color.commanderSurface)
+                        .cornerRadius(10)
+                        .overlay(
+                            RoundedRectangle(cornerRadius: 10)
+                                .stroke(Color.commanderBorder, lineWidth: 0.5)
+                        )
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    // MARK: - Description
+
+    private var descriptionField: some View {
+        VStack(alignment: .leading, spacing: 8) {
+            Text("Describe what you need")
+                .font(.commanderSubhead)
+                .foregroundColor(.commanderText)
+            Text("Be specific — the more detail, the better the result.")
+                .font(.commanderCaption)
+                .foregroundColor(.commanderSecondary)
+
+            TextEditor(text: $taskDescription)
+                .font(.commanderBody)
+                .foregroundColor(.commanderText)
+                .scrollContentBackground(.hidden)
+                .frame(minHeight: 150)
+                .padding(14)
+                .background(Color.commanderSurface)
+                .cornerRadius(12)
+                .overlay(
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.commanderBorder, lineWidth: 0.5)
+                )
+
+            HStack(spacing: 4) {
+                Image(systemName: "lightbulb.fill")
+                    .font(.system(size: 10))
+                    .foregroundColor(.commanderAmber)
+                Text("Tip: Include what you expect to see when it's done")
                     .font(.commanderSmall)
                     .foregroundColor(.commanderMuted)
-                    .italic()
             }
-
-            // Submit
-            Button {
-                submit()
-            } label: {
-                HStack(spacing: 8) {
-                    if isSubmitting {
-                        ProgressView()
-                            .tint(.white)
-                    } else {
-                        Image(systemName: "paperplane.fill")
-                    }
-                    Text(isSubmitting ? "Sending..." : "Submit Task")
-                        .font(.commanderSubhead)
-                }
-                .foregroundColor(.white)
-                .frame(maxWidth: .infinity)
-                .padding(.vertical, 16)
-                .background(canSubmit ? Color.commanderOrange : Color.commanderMuted)
-                .cornerRadius(14)
-            }
-            .disabled(!canSubmit || isSubmitting)
         }
+    }
+
+    // MARK: - Submit
+
+    private var submitButton: some View {
+        Button {
+            submit()
+        } label: {
+            HStack(spacing: 8) {
+                if isSubmitting {
+                    ProgressView()
+                        .tint(.white)
+                } else {
+                    Image(systemName: "paperplane.fill")
+                }
+                Text(isSubmitting ? "Sending..." : "Submit Task")
+                    .font(.commanderSubhead)
+            }
+            .foregroundColor(.white)
+            .frame(maxWidth: .infinity)
+            .padding(.vertical, 16)
+            .background(canSubmit ? Color.commanderOrange : Color.commanderMuted)
+            .cornerRadius(14)
+        }
+        .disabled(!canSubmit || isSubmitting)
     }
 
     // MARK: - Success
@@ -188,9 +250,14 @@ struct OwnerTaskCreateView: View {
             Spacer()
                 .frame(height: 40)
 
-            Image(systemName: "checkmark.circle.fill")
-                .font(.system(size: 60))
-                .foregroundColor(.commanderGreen)
+            ZStack {
+                Circle()
+                    .fill(Color.commanderGreenDim)
+                    .frame(width: 80, height: 80)
+                Image(systemName: "checkmark.circle.fill")
+                    .font(.system(size: 48))
+                    .foregroundColor(.commanderGreen)
+            }
 
             Text("Task Submitted!")
                 .font(.commanderHeadline)

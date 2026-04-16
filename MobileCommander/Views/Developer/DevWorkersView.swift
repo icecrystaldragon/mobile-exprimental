@@ -29,6 +29,9 @@ struct DevWorkersView: View {
             .background(Color.commanderBg)
             .navigationTitle("Workers")
             .navigationBarTitleDisplayMode(.large)
+            .refreshable {
+                await store.refresh()
+            }
         }
     }
 

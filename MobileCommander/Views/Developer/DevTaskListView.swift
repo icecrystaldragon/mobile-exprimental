@@ -54,6 +54,9 @@ struct DevTaskListView: View {
                 DevTaskCreateView()
             }
             .searchable(text: $searchText, prompt: "Search tasks...")
+            .refreshable {
+                await store.refresh()
+            }
         }
     }
 

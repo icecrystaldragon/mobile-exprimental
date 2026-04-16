@@ -22,6 +22,7 @@ struct MockData {
             reviewStatus: .none,
             testStatus: "passing",
             deployStatus: nil,
+            followUp: nil,
             createdAt: Date().addingTimeInterval(-600),
             startedAt: Date().addingTimeInterval(-342),
             completedAt: nil
@@ -46,6 +47,7 @@ struct MockData {
             reviewStatus: .needsReview,
             testStatus: "passing",
             deployStatus: "deployed",
+            followUp: "**What was done**: Added express-rate-limit middleware to /api/auth with per-IP limiting.\n\n**What needs review**: Verify 401 responses for expired tokens include proper WWW-Authenticate headers.\n\n**Action items**: Check rate limit thresholds match production traffic patterns.",
             createdAt: Date().addingTimeInterval(-7200),
             startedAt: Date().addingTimeInterval(-6000),
             completedAt: Date().addingTimeInterval(-5110)
@@ -70,6 +72,7 @@ struct MockData {
             reviewStatus: .none,
             testStatus: nil,
             deployStatus: nil,
+            followUp: nil,
             createdAt: Date().addingTimeInterval(-300),
             startedAt: nil,
             completedAt: nil
@@ -94,6 +97,7 @@ struct MockData {
             reviewStatus: .none,
             testStatus: nil,
             deployStatus: nil,
+            followUp: nil,
             createdAt: Date().addingTimeInterval(-200),
             startedAt: nil,
             completedAt: nil
@@ -118,6 +122,7 @@ struct MockData {
             reviewStatus: .none,
             testStatus: "failing",
             deployStatus: nil,
+            followUp: nil,
             createdAt: Date().addingTimeInterval(-3600),
             startedAt: Date().addingTimeInterval(-3200),
             completedAt: Date().addingTimeInterval(-2744)
@@ -142,6 +147,7 @@ struct MockData {
             reviewStatus: .approved,
             testStatus: "passing",
             deployStatus: "deployed",
+            followUp: "**What was done**: Updated pricing page with new membership tiers.\n\n**What needs review**: Verify copy matches brand voice.\n\n**Action items**: None — deployed successfully.",
             createdAt: Date().addingTimeInterval(-10800),
             startedAt: Date().addingTimeInterval(-10600),
             completedAt: Date().addingTimeInterval(-10480)
