@@ -25,3 +25,21 @@
 3. Download the generated GoogleService-Info.plist
 4. Replace `MobileCommander/GoogleService-Info.plist` with the real file
 5. Copy the `REVERSED_CLIENT_ID` from the real plist into `Info.plist`
+
+## Cannot push to GitHub — no API token
+
+**What I tried:** Installed `gh` CLI and attempted to create a repo + push. Also tried direct GitHub API with curl.
+
+**What went wrong:** No GitHub API token is available. SSH works (authenticated as `palmr-jing`) but creating a repo requires API access.
+
+**What you need to do:**
+```bash
+# Option 1: Use gh CLI
+gh auth login
+gh repo create mobile-exprimental --public --source=. --push
+
+# Option 2: Create repo on github.com manually, then:
+cd ~/repos/mobile-exprimental
+git remote add origin git@github.com:palmr-jing/mobile-exprimental.git
+git push -u origin main
+```
