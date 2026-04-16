@@ -20,26 +20,30 @@
 **What went wrong:** The iOS app needs its own registered iOS app entry in Firebase Console to get a real GoogleService-Info.plist with valid API keys and client IDs.
 
 **What you need to do:**
-1. Go to Firebase Console → Project Settings → Add App → iOS
+1. Go to Firebase Console -> Project Settings -> Add App -> iOS
 2. Enter bundle ID: `com.commander.mobile`
 3. Download the generated GoogleService-Info.plist
 4. Replace `MobileCommander/GoogleService-Info.plist` with the real file
 5. Copy the `REVERSED_CLIENT_ID` from the real plist into `Info.plist`
 
-## Cannot push to GitHub — no API token
+## Cannot push to GitHub — repo needs to be created first
 
-**What I tried:** Installed `gh` CLI and attempted to create a repo + push. Also tried direct GitHub API with curl.
+**What I tried:** SSH authenticates as `palmr-jing`, but `gh` CLI has no API token. Tried pushing but the repo doesn't exist on GitHub yet.
 
-**What went wrong:** No GitHub API token is available. SSH works (authenticated as `palmr-jing`) but creating a repo requires API access.
+**Git remote is configured:** `origin -> git@github.com:palmr-jing/mobile-exprimental.git`
 
 **What you need to do:**
 ```bash
-# Option 1: Use gh CLI
+# Option 1: Use gh CLI (recommended)
 gh auth login
 gh repo create mobile-exprimental --public --source=. --push
 
 # Option 2: Create repo on github.com manually, then:
 cd ~/repos/mobile-exprimental
-git remote add origin git@github.com:palmr-jing/mobile-exprimental.git
+git push -u origin main
+
+# Option 3: Use the other GitHub account (jamesc-terminator)
+git remote set-url origin git@github-m37:jamesc-terminator/mobile-exprimental.git
+# (create repo on github.com under jamesc-terminator first)
 git push -u origin main
 ```
