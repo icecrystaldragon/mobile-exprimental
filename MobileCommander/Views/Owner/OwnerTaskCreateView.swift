@@ -7,12 +7,15 @@ struct OwnerTaskCreateView: View {
     @State private var isSubmitting = false
     @State private var showSuccess = false
     @State private var errorMessage: String?
+    @State private var previousTemplate = ""
 
     private let quickTemplates = [
-        ("Fix a bug", "bug.fill", "There's a bug where [describe what's broken]. It should [describe expected behavior] instead."),
-        ("Add a feature", "plus.rectangle.fill", "I'd like to add [describe the feature]. It should [describe how it works]."),
-        ("Update content", "doc.text.fill", "Update the [page/section] to say [new content]. Currently it says [old content]."),
-        ("Improve design", "paintbrush.fill", "The [page/component] needs visual improvements: [describe what to change]."),
+        ("Fix a bug", "bug.fill", "There's a bug where [describe what's broken]. It should [describe expected behavior] instead. Steps to reproduce: [describe steps]."),
+        ("Add a feature", "plus.rectangle.fill", "I'd like to add [describe the feature]. It should [describe how it works]. This is for [who will use it and why]."),
+        ("Update content", "doc.text.fill", "Update the [page/section] to say [new content]. Currently it says [old content]. Make sure it matches the rest of the site's tone."),
+        ("Improve design", "paintbrush.fill", "The [page/component] needs visual improvements: [describe what to change]. It should look [describe desired outcome]."),
+        ("Fix an error", "exclamationmark.triangle.fill", "Users are seeing an error: [paste or describe the error]. This happens when [describe what triggers it]."),
+        ("General request", "text.bubble.fill", "I need help with [describe what you need]. The goal is [describe what success looks like]."),
     ]
 
     var body: some View {
@@ -149,6 +152,9 @@ struct OwnerTaskCreateView: View {
             Text("What kind of task?")
                 .font(.commanderSubhead)
                 .foregroundColor(.commanderText)
+            Text("Tap a template to get started, then fill in the details.")
+                .font(.commanderCaption)
+                .foregroundColor(.commanderSecondary)
 
             LazyVGrid(columns: [
                 GridItem(.flexible(), spacing: 8),
@@ -156,8 +162,11 @@ struct OwnerTaskCreateView: View {
             ], spacing: 8) {
                 ForEach(quickTemplates, id: \.0) { template in
                     Button {
-                        if taskDescription.isEmpty {
+                        let impact = UIImpactFeedbackGenerator(style: .light)
+                        impact.impactOccurred()
+                        if taskDescription.isEmpty || taskDescription == previousTemplate {
                             taskDescription = template.2
+                            previousTemplate = template.2
                         }
                     } label: {
                         HStack(spacing: 8) {
@@ -167,6 +176,7 @@ struct OwnerTaskCreateView: View {
                             Text(template.0)
                                 .font(.commanderCaptionMedium)
                                 .foregroundColor(.commanderText)
+                                .lineLimit(1)
                         }
                         .frame(maxWidth: .infinity, alignment: .leading)
                         .padding(12)
@@ -311,10 +321,14 @@ struct OwnerTaskCreateView: View {
         Task {
             do {
                 try await store.createTask(form)
+                let impact = UINotificationFeedbackGenerator()
+                impact.notificationOccurred(.success)
                 withAnimation {
                     showSuccess = true
                 }
             } catch {
+                let impact = UINotificationFeedbackGenerator()
+                impact.notificationOccurred(.error)
                 errorMessage = error.localizedDescription
             }
             isSubmitting = false

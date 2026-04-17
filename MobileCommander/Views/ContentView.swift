@@ -31,8 +31,8 @@ struct DevTabView: View {
     enum DevTab: String {
         case dashboard = "Dashboard"
         case tasks = "Tasks"
-        case workers = "Workers"
-        case activity = "Activity"
+        case notifications = "Alerts"
+        case reports = "Reports"
         case settings = "Settings"
     }
 
@@ -62,19 +62,20 @@ struct DevTabView: View {
                 .tag(DevTab.tasks)
                 .badge(reviewCount)
 
-            DevWorkersView()
+            DevNotificationsView()
                 .tabItem {
-                    Image(systemName: "server.rack")
-                    Text("Workers")
+                    Image(systemName: "bell.fill")
+                    Text("Alerts")
                 }
-                .tag(DevTab.workers)
+                .tag(DevTab.notifications)
+                .badge(attentionCount)
 
-            DevActivityView()
+            DevReportsView()
                 .tabItem {
-                    Image(systemName: "clock.arrow.circlepath")
-                    Text("Activity")
+                    Image(systemName: "chart.bar.fill")
+                    Text("Reports")
                 }
-                .tag(DevTab.activity)
+                .tag(DevTab.reports)
 
             SettingsView(appMode: $appMode)
                 .tabItem {

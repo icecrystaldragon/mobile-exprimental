@@ -1,34 +1,80 @@
 # Test Report
 
-## Current Status: BLOCKED
+## Build Status
 
-Cannot run tests because full Xcode is not installed (only Command Line Tools).
+**BLOCKED** — Cannot compile or run tests. Full Xcode 16+ is required but only Command Line Tools are installed.
 
-## What exists
+## What Exists
+
 - SwiftUI Preview providers on all views for visual testing
-- MockData.swift provides sample data for previews and unit tests
+- MockData.swift provides sample data for previews
+- All new views (DevReportsView, DevNotificationsView) have Preview providers
 
-## How to test
+## How to Test
+
+### Prerequisites
+1. Install Xcode 16+ from the Mac App Store
+2. Run `xcode-select -s /Applications/Xcode.app/Contents/Developer`
+3. Open `MobileCommander.xcodeproj` in Xcode
+4. Wait for SPM to resolve Firebase and GoogleSignIn packages
+5. Replace `GoogleService-Info.plist` with real Firebase config for integration testing
 
 ### SwiftUI Previews
-1. Open `MobileCommander.xcodeproj` in Xcode
-2. Open any view file (e.g., `DevDashboardView.swift`)
-3. Canvas should render the preview with mock data
+Open any view file in Xcode and the canvas should render with mock data.
 
-### Manual Testing
-1. Build and run on iOS Simulator
-2. Test login flow (requires real GoogleService-Info.plist)
-3. Verify Developer mode: Dashboard -> Tasks -> Workers -> Activity -> Settings
-4. Switch to Owner mode in Settings
-5. Verify Owner mode: Home -> New Task -> Settings
-6. Test task creation in both modes (Owner mode has task templates now)
-7. Test task detail view navigation
-8. Test Follow Up tab in Developer task detail
-9. Test pull-to-refresh on Dashboard, Tasks, Workers, Owner Home
-10. Test tab badge counts update for items needing attention
-11. Test Approve/Request Changes from task detail menu
-12. Test Delete Task from task detail menu
-13. Verify listeners clean up when leaving task detail view
+### Manual Test Checklist
+
+**Authentication**
+- [ ] Login screen appears when not authenticated
+- [ ] Google Sign-In flow works
+- [ ] Sign out returns to login
+
+**Developer Mode — Dashboard**
+- [ ] Stats grid filters recent tasks on tap
+- [ ] "View all" workers link works
+- [ ] "Activity Log" link works
+- [ ] Pull-to-refresh works
+
+**Developer Mode — Tasks**
+- [ ] Status and project filters work
+- [ ] Search filters correctly
+- [ ] Context menu: retry, approve, delete
+- [ ] Delete shows confirmation dialog
+
+**Developer Mode — Task Detail**
+- [ ] Output, Chat, Follow Up, Info tabs all render
+- [ ] Menu actions all work with haptic feedback
+- [ ] Delete confirmation dialog appears
+- [ ] Chat send button works
+
+**Developer Mode — Alerts**
+- [ ] Notifications grouped by type
+- [ ] Filters: All, Needs Attention, Completed, Running
+- [ ] Tap navigates to task detail
+
+**Developer Mode — Reports**
+- [ ] Time range filters: Today, 7 Days, 30 Days, All Time
+- [ ] Cost, duration, success rate metrics correct
+- [ ] Project and worker breakdowns render
+- [ ] Most expensive tasks sorted correctly
+
+**Owner Mode — Home**
+- [ ] Sticky header with status message
+- [ ] Running task cards with live dot
+- [ ] Needs attention section
+- [ ] Pull-to-refresh
+
+**Owner Mode — New Task**
+- [ ] 6 templates fill description
+- [ ] Project chips and text field
+- [ ] Submit creates Firestore document
+- [ ] Success animation and haptic
+
+**Owner Mode — Task Detail**
+- [ ] Elapsed time ticker for running tasks
+- [ ] "Looks Good" / "Needs Work" buttons for review
+- [ ] Chat interface works
+- [ ] Retry with confirmation dialog
 
 ### Unit Tests (to be added)
 - `DataStore` task filtering and computed properties
@@ -38,5 +84,6 @@ Cannot run tests because full Xcode is not installed (only Command Line Tools).
 
 ## Test Environment
 - iOS 17+ Simulator or device
-- Requires Xcode 16+
-- Requires real Firebase configuration for integration testing
+- Xcode 16+
+- Real Firebase config required for integration testing
+- Haptic feedback only testable on physical device

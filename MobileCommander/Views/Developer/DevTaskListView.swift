@@ -6,6 +6,8 @@ struct DevTaskListView: View {
     @State private var projectFilter: String?
     @State private var searchText = ""
     @State private var showCreateTask = false
+    @State private var showDeleteConfirm = false
+    @State private var taskToDelete: CommanderTask?
 
     private var filteredTasks: [CommanderTask] {
         var result = store.tasks
@@ -56,6 +58,21 @@ struct DevTaskListView: View {
             .searchable(text: $searchText, prompt: "Search tasks...")
             .refreshable {
                 await store.refresh()
+            }
+            .alert("Delete Task?", isPresented: $showDeleteConfirm) {
+                Button("Delete", role: .destructive) {
+                    if let task = taskToDelete {
+                        let impact = UINotificationFeedbackGenerator()
+                        impact.notificationOccurred(.warning)
+                        Task { try? await store.deleteTask(task) }
+                    }
+                    taskToDelete = nil
+                }
+                Button("Cancel", role: .cancel) { taskToDelete = nil }
+            } message: {
+                if let task = taskToDelete {
+                    Text("Permanently delete \"\(task.task)\"? This cannot be undone.")
+                }
             }
         }
     }
@@ -132,12 +149,23 @@ struct DevTaskListView: View {
                                 }
                             }
 
-                            if task.status == .running {
+                            if task.effectiveStatus == .needsReview {
                                 Button {
-                                    // Navigate to chat would be handled by detail view
+                                    Task {
+                                        let impact = UINotificationFeedbackGenerator()
+                                        impact.notificationOccurred(.success)
+                                        try? await store.approveTask(task)
+                                    }
                                 } label: {
-                                    Label("Chat", systemImage: "bubble.left")
+                                    Label("Approve", systemImage: "checkmark.seal")
                                 }
+                            }
+
+                            Button(role: .destructive) {
+                                taskToDelete = task
+                                showDeleteConfirm = true
+                            } label: {
+                                Label("Delete", systemImage: "trash")
                             }
                         }
                     }
@@ -149,6 +177,8 @@ struct DevTaskListView: View {
     }
 
     private func retryTask(_ task: CommanderTask) {
+        let impact = UIImpactFeedbackGenerator(style: .medium)
+        impact.impactOccurred()
         Task {
             try? await store.retryTask(task)
         }

@@ -15,6 +15,7 @@ struct DevDashboardView: View {
                     projectProgress
                     workerFleet
                     recentTasks
+                    activityLink
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 32)
@@ -134,9 +135,17 @@ struct DevDashboardView: View {
     private var workerFleet: some View {
         if !store.workers.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
-                Text("Worker Fleet")
-                    .font(.commanderCaptionMedium)
-                    .foregroundColor(.commanderSecondary)
+                HStack {
+                    Text("Worker Fleet")
+                        .font(.commanderCaptionMedium)
+                        .foregroundColor(.commanderSecondary)
+                    Spacer()
+                    NavigationLink(destination: DevWorkersView()) {
+                        Text("View all")
+                            .font(.commanderSmall)
+                            .foregroundColor(.commanderOrange)
+                    }
+                }
 
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 10) {
@@ -219,6 +228,36 @@ struct DevDashboardView: View {
                 }
             }
         }
+    }
+
+    // MARK: - Activity Link
+
+    private var activityLink: some View {
+        NavigationLink(destination: DevActivityView()) {
+            HStack(spacing: 10) {
+                Image(systemName: "clock.arrow.circlepath")
+                    .font(.system(size: 14))
+                    .foregroundColor(.commanderOrange)
+                Text("View Activity Log")
+                    .font(.commanderCaptionMedium)
+                    .foregroundColor(.commanderText)
+                Spacer()
+                Text("\(store.activities.count)")
+                    .font(.commanderSmall)
+                    .foregroundColor(.commanderSecondary)
+                Image(systemName: "chevron.right")
+                    .font(.system(size: 10))
+                    .foregroundColor(.commanderMuted)
+            }
+            .padding(14)
+            .background(Color.commanderSurface)
+            .cornerRadius(12)
+            .overlay(
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(Color.commanderBorder, lineWidth: 0.5)
+            )
+        }
+        .buttonStyle(.plain)
     }
 
     private var filteredTasks: [CommanderTask] {

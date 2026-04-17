@@ -95,12 +95,15 @@ struct OwnerHomeView: View {
         let running = activeTasks.count
         let attention = needsAttention.count
         if attention > 0 {
-            return "\(attention) item\(attention == 1 ? "" : "s") need\(attention == 1 ? "s" : "") attention"
+            return "\(attention) item\(attention == 1 ? "" : "s") need\(attention == 1 ? "s" : "") your attention"
         }
         if running > 0 {
-            return "\(running) task\(running == 1 ? "" : "s") running"
+            return "\(running) task\(running == 1 ? " is" : "s are") being worked on"
         }
-        return "All quiet"
+        if !completedTasks.isEmpty {
+            return "Everything's up to date"
+        }
+        return "No tasks yet — create one to get started"
     }
 
     // MARK: - Status Strip (palmr pillar-strip inspired)

@@ -11,6 +11,7 @@ struct DevTaskDetailView: View {
     @State private var autoScroll = true
     @State private var outputListener: ListenerRegistration?
     @State private var chatListener: ListenerRegistration?
+    @State private var showDeleteConfirm = false
 
     enum DetailTab: String, CaseIterable {
         case output = "Output"
@@ -33,6 +34,8 @@ struct DevTaskDetailView: View {
                 Menu {
                     if task.status == .failed || task.status == .blocked {
                         Button {
+                            let impact = UIImpactFeedbackGenerator(style: .medium)
+                            impact.impactOccurred()
                             Task { try? await store.retryTask(task) }
                         } label: {
                             Label("Retry Task", systemImage: "arrow.clockwise")
@@ -41,12 +44,16 @@ struct DevTaskDetailView: View {
 
                     if task.effectiveStatus == .needsReview {
                         Button {
+                            let impact = UINotificationFeedbackGenerator()
+                            impact.notificationOccurred(.success)
                             Task { try? await store.approveTask(task) }
                         } label: {
                             Label("Approve", systemImage: "checkmark.seal")
                         }
 
                         Button {
+                            let impact = UIImpactFeedbackGenerator(style: .medium)
+                            impact.impactOccurred()
                             Task { try? await store.requestChanges(task) }
                         } label: {
                             Label("Request Changes", systemImage: "arrow.uturn.backward")
@@ -72,7 +79,7 @@ struct DevTaskDetailView: View {
                     Divider()
 
                     Button(role: .destructive) {
-                        Task { try? await store.deleteTask(task) }
+                        showDeleteConfirm = true
                     } label: {
                         Label("Delete Task", systemImage: "trash")
                     }
@@ -84,6 +91,16 @@ struct DevTaskDetailView: View {
         }
         .onAppear { startListeners() }
         .onDisappear { stopListeners() }
+        .alert("Delete Task #\(task.numId)?", isPresented: $showDeleteConfirm) {
+            Button("Delete", role: .destructive) {
+                let impact = UINotificationFeedbackGenerator()
+                impact.notificationOccurred(.warning)
+                Task { try? await store.deleteTask(task) }
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently remove \"\(task.task)\" and all its output. This cannot be undone.")
+        }
     }
 
     // MARK: - Task Header
@@ -463,6 +480,8 @@ struct DevTaskDetailView: View {
     private func sendMessage() {
         let content = chatInput.trimmingCharacters(in: .whitespaces)
         guard !content.isEmpty else { return }
+        let impact = UIImpactFeedbackGenerator(style: .light)
+        impact.impactOccurred()
         chatInput = ""
         Task {
             try? await store.sendChatMessage(taskId: task.id, content: content)

@@ -188,12 +188,16 @@ struct DevTaskCreateView: View {
         Task {
             do {
                 try await store.createTask(form)
+                let impact = UINotificationFeedbackGenerator()
+                impact.notificationOccurred(.success)
                 showSuccess = true
                 form = NewTaskForm()
                 try? await Task.sleep(nanoseconds: 2_000_000_000)
                 showSuccess = false
                 dismiss()
             } catch {
+                let impact = UINotificationFeedbackGenerator()
+                impact.notificationOccurred(.error)
                 errorMessage = error.localizedDescription
             }
             isSubmitting = false

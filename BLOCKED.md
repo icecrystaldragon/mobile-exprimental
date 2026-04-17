@@ -28,8 +28,6 @@
 
 ## Cannot push to GitHub — repo needs to be created first
 
-**What I tried:** SSH authenticates as `palmr-jing`, but `gh` CLI has no API token. Tried pushing but the repo doesn't exist on GitHub yet.
-
 **Git remote is configured:** `origin -> git@github.com:palmr-jing/mobile-exprimental.git`
 
 **What you need to do:**

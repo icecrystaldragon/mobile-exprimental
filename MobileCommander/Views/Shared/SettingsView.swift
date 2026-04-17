@@ -14,6 +14,9 @@ struct SettingsView: View {
                 VStack(spacing: 16) {
                     modeSelector
                     accountSection
+                    if mode == .developer {
+                        quickLinksSection
+                    }
                     statsSection
                     aboutSection
                     signOutButton
@@ -142,6 +145,53 @@ struct SettingsView: View {
                 .foregroundColor(.commanderMuted)
         }
         .frame(maxWidth: .infinity)
+    }
+
+    // MARK: - Quick Links (Developer only)
+
+    private var quickLinksSection: some View {
+        CommanderCard {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Quick Links")
+                    .font(.commanderCaptionMedium)
+                    .foregroundColor(.commanderOrange)
+
+                NavigationLink(destination: DevWorkersView()) {
+                    quickLinkRow(icon: "server.rack", label: "Workers", subtitle: "\(store.workers.filter { $0.status != .offline }.count) online")
+                }
+                .buttonStyle(.plain)
+
+                NavigationLink(destination: DevActivityView()) {
+                    quickLinkRow(icon: "clock.arrow.circlepath", label: "Activity Log", subtitle: "\(store.activities.count) events")
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+
+    private func quickLinkRow(icon: String, label: String, subtitle: String) -> some View {
+        HStack(spacing: 10) {
+            Image(systemName: icon)
+                .font(.system(size: 13))
+                .foregroundColor(.commanderOrange)
+                .frame(width: 28, height: 28)
+                .background(Color.commanderOrangeDim)
+                .cornerRadius(6)
+
+            Text(label)
+                .font(.commanderBody)
+                .foregroundColor(.commanderText)
+
+            Spacer()
+
+            Text(subtitle)
+                .font(.commanderCaption)
+                .foregroundColor(.commanderSecondary)
+
+            Image(systemName: "chevron.right")
+                .font(.system(size: 10))
+                .foregroundColor(.commanderMuted)
+        }
     }
 
     // MARK: - About
