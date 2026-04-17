@@ -221,4 +221,10 @@ struct MockData {
     ]
 
     static let projects: [String] = ["everbnb", "gym-app"]
+
+    static let additionalActivities: [ActivityEvent] = [
+        ActivityEvent(id: "act_7", action: "task_approved", details: ["task_num_id": "6", "project": "gym-app"], userEmail: "james@example.com", userName: "James", timestamp: Date().addingTimeInterval(-100)),
+        ActivityEvent(id: "act_8", action: "task_status_changed", details: ["task_num_id": "1", "new_status": "running", "project": "everbnb"], userEmail: nil, userName: "System", timestamp: Date().addingTimeInterval(-350)),
+        ActivityEvent(id: "act_9", action: "task_status_changed", details: ["task_num_id": "6", "new_status": "done", "project": "gym-app", "task_name": "Update pricing page copy"], userEmail: nil, userName: "System", timestamp: Date().addingTimeInterval(-10480)),
+    ]
 }

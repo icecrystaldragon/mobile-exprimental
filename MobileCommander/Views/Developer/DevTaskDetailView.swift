@@ -12,6 +12,12 @@ struct DevTaskDetailView: View {
     @State private var outputListener: ListenerRegistration?
     @State private var chatListener: ListenerRegistration?
     @State private var showDeleteConfirm = false
+    @State private var isEditing = false
+    @State private var editProject: String = ""
+    @State private var editPath: String = ""
+    @State private var editDescription: String = ""
+    @State private var editPriority: String = ""
+    @State private var editAssignedWorker: String = ""
 
     enum DetailTab: String, CaseIterable {
         case output = "Output"
@@ -382,29 +388,70 @@ struct DevTaskDetailView: View {
     private var infoView: some View {
         ScrollView {
             VStack(alignment: .leading, spacing: 12) {
+                HStack {
+                    Spacer()
+                    Button {
+                        if isEditing {
+                            saveEdits()
+                        } else {
+                            editProject = task.project
+                            editPath = task.path
+                            editDescription = task.description
+                            editPriority = "\(task.priority)"
+                            editAssignedWorker = task.assignedWorker ?? ""
+                        }
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            isEditing.toggle()
+                        }
+                    } label: {
+                        HStack(spacing: 4) {
+                            Image(systemName: isEditing ? "checkmark.circle.fill" : "pencil.circle")
+                                .font(.system(size: 14))
+                            Text(isEditing ? "Save" : "Edit")
+                                .font(.commanderCaptionMedium)
+                        }
+                        .foregroundColor(.commanderOrange)
+                    }
+                    .buttonStyle(.plain)
+                }
+
                 infoSection("Task Details") {
                     infoRow("ID", "#\(task.numId)")
-                    infoRow("Project", task.project)
-                    infoRow("Path", task.path)
-                    infoRow("Priority", "\(task.priority)")
+                    InlineEditField(label: "Project", text: $editProject, placeholder: "Project", isEditing: isEditing)
+                    InlineEditField(label: "Path", text: $editPath, placeholder: "Working directory", isEditing: isEditing)
+                    InlineEditField(label: "Priority", text: $editPriority, placeholder: "1-100", isEditing: isEditing)
+                    InlineEditField(label: "Worker", text: $editAssignedWorker, placeholder: "Any", isEditing: isEditing)
                     if !task.dependsOn.isEmpty {
                         infoRow("Depends On", task.dependsOn.map { "#\($0)" }.joined(separator: ", "))
                     }
                 }
 
                 infoSection("Description") {
-                    Text(task.description)
-                        .font(.commanderBody)
-                        .foregroundColor(.commanderText)
+                    if isEditing {
+                        TextEditor(text: $editDescription)
+                            .font(.commanderBody)
+                            .foregroundColor(.commanderText)
+                            .scrollContentBackground(.hidden)
+                            .frame(minHeight: 80)
+                            .padding(8)
+                            .background(Color.commanderBg)
+                            .cornerRadius(8)
+                            .overlay(
+                                RoundedRectangle(cornerRadius: 8)
+                                    .stroke(Color.commanderOrange.opacity(0.3), lineWidth: 1)
+                            )
+                    } else {
+                        Text(task.description)
+                            .font(.commanderBody)
+                            .foregroundColor(.commanderText)
+                            .textSelection(.enabled)
+                    }
                 }
 
                 infoSection("Execution") {
                     infoRow("Status", task.effectiveStatus.displayName)
                     if let worker = task.claimedBy {
                         infoRow("Worker", worker)
-                    }
-                    if let assigned = task.assignedWorker {
-                        infoRow("Assigned To", assigned)
                     }
                     if let cost = task.costString {
                         infoRow("Cost", cost)
@@ -448,6 +495,29 @@ struct DevTaskDetailView: View {
                 }
             }
             .padding(16)
+        }
+    }
+
+    private func saveEdits() {
+        Task {
+            if editProject != task.project {
+                try? await store.updateTaskField(task, field: "project", value: editProject)
+            }
+            if editPath != task.path {
+                try? await store.updateTaskField(task, field: "path", value: editPath)
+            }
+            if editDescription != task.description {
+                try? await store.updateTaskField(task, field: "description", value: editDescription)
+            }
+            if let newPriority = Int(editPriority), newPriority != task.priority {
+                try? await store.updateTaskField(task, field: "priority", value: newPriority)
+            }
+            let newWorker = editAssignedWorker.trimmingCharacters(in: .whitespaces)
+            if newWorker != (task.assignedWorker ?? "") {
+                try? await store.updateTaskField(task, field: "assigned_worker", value: newWorker.isEmpty ? NSNull() : newWorker)
+            }
+            let impact = UINotificationFeedbackGenerator()
+            impact.notificationOccurred(.success)
         }
     }
 

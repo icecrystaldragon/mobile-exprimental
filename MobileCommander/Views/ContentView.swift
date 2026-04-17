@@ -98,11 +98,17 @@ struct OwnerTabView: View {
     enum OwnerTab: String {
         case home = "Home"
         case create = "New Task"
+        case messages = "Messages"
+        case activity = "Activity"
         case settings = "Settings"
     }
 
     private var attentionCount: Int {
         store.tasks.filter { $0.status == .failed || $0.status == .blocked || $0.effectiveStatus == .needsReview }.count
+    }
+
+    private var runningCount: Int {
+        store.tasks.filter { $0.status == .running }.count
     }
 
     var body: some View {
@@ -121,6 +127,21 @@ struct OwnerTabView: View {
                     Text("New Task")
                 }
                 .tag(OwnerTab.create)
+
+            OwnerChatListView()
+                .tabItem {
+                    Image(systemName: "bubble.left.and.bubble.right.fill")
+                    Text("Messages")
+                }
+                .tag(OwnerTab.messages)
+                .badge(runningCount)
+
+            OwnerActivityView()
+                .tabItem {
+                    Image(systemName: "clock.arrow.circlepath")
+                    Text("Activity")
+                }
+                .tag(OwnerTab.activity)
 
             SettingsView(appMode: $appMode)
                 .tabItem {

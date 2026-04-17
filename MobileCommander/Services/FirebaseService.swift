@@ -268,6 +268,32 @@ class DataStore: ObservableObject {
         ])
     }
 
+    func updateTaskField(_ task: CommanderTask, field: String, value: Any) async throws {
+        let q = db.collection("commander_tasks")
+            .whereField("num_id", isEqualTo: task.numId)
+            .limit(to: 1)
+        let snap = try await q.getDocuments()
+        guard let doc = snap.documents.first else { return }
+
+        try await doc.reference.updateData([
+            field: value,
+            "updated_at": FieldValue.serverTimestamp(),
+        ])
+    }
+
+    func batchRetryFailed() async throws {
+        let failedTasks = tasks.filter { $0.status == .failed }
+        for task in failedTasks {
+            try await retryTask(task)
+        }
+    }
+
+    func batchDeleteTasks(_ tasksToDelete: [CommanderTask]) async throws {
+        for task in tasksToDelete {
+            try await deleteTask(task)
+        }
+    }
+
     func sendChatMessage(taskId: String, content: String) async throws {
         let data: [String: Any] = [
             "role": "user",

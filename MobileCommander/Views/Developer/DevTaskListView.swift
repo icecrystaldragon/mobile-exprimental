@@ -8,6 +8,9 @@ struct DevTaskListView: View {
     @State private var showCreateTask = false
     @State private var showDeleteConfirm = false
     @State private var taskToDelete: CommanderTask?
+    @State private var isSelectMode = false
+    @State private var selectedIds: Set<String> = []
+    @State private var showBatchDeleteConfirm = false
 
     private var filteredTasks: [CommanderTask] {
         var result = store.tasks
@@ -43,6 +46,18 @@ struct DevTaskListView: View {
             .navigationTitle("Tasks")
             .navigationBarTitleDisplayMode(.large)
             .toolbar {
+                ToolbarItem(placement: .topBarLeading) {
+                    Button {
+                        withAnimation {
+                            isSelectMode.toggle()
+                            if !isSelectMode { selectedIds.removeAll() }
+                        }
+                    } label: {
+                        Text(isSelectMode ? "Done" : "Select")
+                            .font(.commanderCaption)
+                            .foregroundColor(.commanderOrange)
+                    }
+                }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
                         showCreateTask = true
@@ -123,56 +138,130 @@ struct DevTaskListView: View {
         .padding(.vertical, 8)
     }
 
+    // MARK: - Batch Actions Bar
+
+    @ViewBuilder
+    private var batchActionsBar: some View {
+        if isSelectMode && !selectedIds.isEmpty {
+            HStack(spacing: 12) {
+                Text("\(selectedIds.count) selected")
+                    .font(.commanderCaptionMedium)
+                    .foregroundColor(.commanderText)
+
+                Spacer()
+
+                let selectedTasks = filteredTasks.filter { selectedIds.contains($0.id) }
+                let hasRetryable = selectedTasks.contains { $0.status == .failed || $0.status == .blocked }
+
+                if hasRetryable {
+                    QuickActionButton(title: "Retry", icon: "arrow.clockwise", color: .commanderAmber) {
+                        let retryable = selectedTasks.filter { $0.status == .failed || $0.status == .blocked }
+                        Task {
+                            for task in retryable {
+                                try? await store.retryTask(task)
+                            }
+                        }
+                        selectedIds.removeAll()
+                    }
+                }
+
+                QuickActionButton(title: "Delete", icon: "trash", color: .commanderRed) {
+                    showBatchDeleteConfirm = true
+                }
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 8)
+            .background(Color.commanderSurface)
+            .overlay(
+                Rectangle().fill(Color.commanderBorder).frame(height: 0.5),
+                alignment: .bottom
+            )
+        }
+    }
+
     // MARK: - Task List
 
     private var taskList: some View {
-        ScrollView {
-            LazyVStack(spacing: 8) {
-                if filteredTasks.isEmpty {
-                    EmptyStateView(
-                        icon: "magnifyingglass",
-                        title: "No matching tasks",
-                        subtitle: "Try adjusting your filters"
-                    )
-                } else {
-                    ForEach(filteredTasks) { task in
-                        NavigationLink(destination: DevTaskDetailView(task: task)) {
-                            TaskRow(task: task)
-                        }
-                        .buttonStyle(.plain)
-                        .contextMenu {
-                            if task.status == .failed || task.status == .blocked {
-                                Button {
-                                    retryTask(task)
-                                } label: {
-                                    Label("Retry", systemImage: "arrow.clockwise")
-                                }
-                            }
+        VStack(spacing: 0) {
+            batchActionsBar
 
-                            if task.effectiveStatus == .needsReview {
+            ScrollView {
+                LazyVStack(spacing: 8) {
+                    if filteredTasks.isEmpty {
+                        EmptyStateView(
+                            icon: "magnifyingglass",
+                            title: "No matching tasks",
+                            subtitle: "Try adjusting your filters"
+                        )
+                    } else {
+                        ForEach(filteredTasks) { task in
+                            if isSelectMode {
                                 Button {
-                                    Task {
-                                        let impact = UINotificationFeedbackGenerator()
-                                        impact.notificationOccurred(.success)
-                                        try? await store.approveTask(task)
+                                    if selectedIds.contains(task.id) {
+                                        selectedIds.remove(task.id)
+                                    } else {
+                                        selectedIds.insert(task.id)
                                     }
                                 } label: {
-                                    Label("Approve", systemImage: "checkmark.seal")
+                                    HStack(spacing: 10) {
+                                        Image(systemName: selectedIds.contains(task.id) ? "checkmark.circle.fill" : "circle")
+                                            .font(.system(size: 20))
+                                            .foregroundColor(selectedIds.contains(task.id) ? .commanderOrange : .commanderMuted)
+                                        TaskRow(task: task)
+                                    }
                                 }
-                            }
+                                .buttonStyle(.plain)
+                            } else {
+                                NavigationLink(destination: DevTaskDetailView(task: task)) {
+                                    TaskRow(task: task)
+                                }
+                                .buttonStyle(.plain)
+                                .contextMenu {
+                                    if task.status == .failed || task.status == .blocked {
+                                        Button {
+                                            retryTask(task)
+                                        } label: {
+                                            Label("Retry", systemImage: "arrow.clockwise")
+                                        }
+                                    }
 
-                            Button(role: .destructive) {
-                                taskToDelete = task
-                                showDeleteConfirm = true
-                            } label: {
-                                Label("Delete", systemImage: "trash")
+                                    if task.effectiveStatus == .needsReview {
+                                        Button {
+                                            Task {
+                                                let impact = UINotificationFeedbackGenerator()
+                                                impact.notificationOccurred(.success)
+                                                try? await store.approveTask(task)
+                                            }
+                                        } label: {
+                                            Label("Approve", systemImage: "checkmark.seal")
+                                        }
+                                    }
+
+                                    Button(role: .destructive) {
+                                        taskToDelete = task
+                                        showDeleteConfirm = true
+                                    } label: {
+                                        Label("Delete", systemImage: "trash")
+                                    }
+                                }
                             }
                         }
                     }
                 }
+                .padding(.horizontal, 16)
+                .padding(.bottom, 32)
             }
-            .padding(.horizontal, 16)
-            .padding(.bottom, 32)
+        }
+        .alert("Delete \(selectedIds.count) tasks?", isPresented: $showBatchDeleteConfirm) {
+            Button("Delete All", role: .destructive) {
+                let tasksToDelete = store.tasks.filter { selectedIds.contains($0.id) }
+                Task { try? await store.batchDeleteTasks(tasksToDelete) }
+                selectedIds.removeAll()
+                isSelectMode = false
+            }
+            Button("Cancel", role: .cancel) {}
+        } message: {
+            Text("This will permanently delete the selected tasks. This cannot be undone.")
         }
     }
 

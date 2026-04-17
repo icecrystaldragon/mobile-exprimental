@@ -115,15 +115,58 @@ struct DevDashboardView: View {
     @ViewBuilder
     private var projectProgress: some View {
         let projects = store.projectNames
-        if projects.count > 1 {
+        if !projects.isEmpty {
             VStack(alignment: .leading, spacing: 8) {
                 Text("By Project")
                     .font(.commanderCaptionMedium)
                     .foregroundColor(.commanderSecondary)
 
                 ForEach(projects, id: \.self) { project in
-                    let progress = store.projectProgress(project)
-                    CommanderProgressBar(done: progress.done, total: progress.total, label: project)
+                    NavigationLink(destination: DevProjectDetailView(project: project)) {
+                        projectCard(project)
+                    }
+                    .buttonStyle(.plain)
+                }
+            }
+        }
+    }
+
+    private func projectCard(_ project: String) -> some View {
+        let progress = store.projectProgress(project)
+        let cost = store.tasks(for: project).reduce(0) { $0 + ($1.costUsd ?? 0) }
+        let running = store.tasks(for: project).filter { $0.status == .running }.count
+
+        return CommanderCard {
+            VStack(alignment: .leading, spacing: 8) {
+                HStack {
+                    HStack(spacing: 6) {
+                        Image(systemName: "folder.fill")
+                            .font(.system(size: 12))
+                            .foregroundColor(.commanderOrange)
+                        Text(project)
+                            .font(.commanderCaptionMedium)
+                            .foregroundColor(.commanderText)
+                    }
+                    Spacer()
+                    if running > 0 {
+                        HStack(spacing: 4) {
+                            LiveDot()
+                            Text("\(running) running")
+                                .font(.commanderSmall)
+                                .foregroundColor(.commanderAmber)
+                        }
+                    }
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 10))
+                        .foregroundColor(.commanderMuted)
+                }
+
+                CommanderProgressBar(done: progress.done, total: progress.total, label: "\(progress.done)/\(progress.total) tasks")
+
+                if cost > 0 {
+                    Text(String(format: "$%.2f spent", cost))
+                        .font(.commanderSmall)
+                        .foregroundColor(.commanderMuted)
                 }
             }
         }
@@ -230,19 +273,42 @@ struct DevDashboardView: View {
         }
     }
 
-    // MARK: - Activity Link
+    // MARK: - Quick Links
 
     private var activityLink: some View {
-        NavigationLink(destination: DevActivityView()) {
+        VStack(spacing: 8) {
+            dashboardLink(
+                icon: "chart.bar.doc.horizontal",
+                label: "Quota & Costs",
+                subtitle: String(format: "$%.2f total", store.totalCost),
+                destination: AnyView(DevQuotaView())
+            )
+            dashboardLink(
+                icon: "tablecells",
+                label: "Spreadsheet View",
+                subtitle: "\(store.tasks.count) tasks",
+                destination: AnyView(DevSpreadsheetView())
+            )
+            dashboardLink(
+                icon: "clock.arrow.circlepath",
+                label: "Activity Log",
+                subtitle: "\(store.activities.count) events",
+                destination: AnyView(DevActivityView())
+            )
+        }
+    }
+
+    private func dashboardLink(icon: String, label: String, subtitle: String, destination: AnyView) -> some View {
+        NavigationLink(destination: destination) {
             HStack(spacing: 10) {
-                Image(systemName: "clock.arrow.circlepath")
+                Image(systemName: icon)
                     .font(.system(size: 14))
                     .foregroundColor(.commanderOrange)
-                Text("View Activity Log")
+                Text(label)
                     .font(.commanderCaptionMedium)
                     .foregroundColor(.commanderText)
                 Spacer()
-                Text("\(store.activities.count)")
+                Text(subtitle)
                     .font(.commanderSmall)
                     .foregroundColor(.commanderSecondary)
                 Image(systemName: "chevron.right")

@@ -1,19 +1,27 @@
 # Deploy Status
 
-## Deployment Target: iOS App Store / TestFlight
+## Platform: iOS (Native SwiftUI)
 
-**Status:** NOT DEPLOYED — Pre-release development build
+**Build Status**: NOT BUILT (Xcode not installed)
+**Deploy Target**: iOS 17+ (iPhone)
+**Architecture**: SwiftUI + Firebase (Auth, Firestore)
+**Files**: 25 Swift source files
 
-This is a native iOS app. Deployment is via Xcode → App Store Connect / TestFlight, not web hosting.
+## Current State
+- All source files written (25 Swift files across Design, Models, Services, Views)
+- Firebase dependencies configured via SPM (firebase-ios-sdk 11.0+, GoogleSignIn 8.0+)
+- XcodeGen project config ready (`project.yml`)
+- Placeholder Firebase config needs replacement before first build
 
-### Build Status
-- XcodeGen project generation: SUCCESS
-- Xcode build: BLOCKED (Xcode not installed on this machine)
+## Deployment Steps (when ready)
+1. Install Xcode 16+
+2. Run `xcodegen generate`
+3. Replace `GoogleService-Info.plist` with real Firebase config
+4. Build in Xcode (Cmd+B)
+5. Set up Apple Developer account signing
+6. Archive > Upload to App Store Connect > TestFlight
 
-### Deployment Steps (when ready)
-1. Install Xcode and build the project
-2. Set up an Apple Developer account (if not already)
-3. Configure signing and provisioning profiles in Xcode
-4. Archive the app (Product → Archive)
-5. Upload to App Store Connect via Xcode Organizer
-6. Distribute via TestFlight for testing
+## Not Applicable
+- No web deployment (native iOS app)
+- No CI/CD pipeline configured
+- No Firebase Hosting needed

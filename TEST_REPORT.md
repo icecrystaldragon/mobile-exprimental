@@ -2,88 +2,103 @@
 
 ## Build Status
 
-**BLOCKED** — Cannot compile or run tests. Full Xcode 16+ is required but only Command Line Tools are installed.
+**BLOCKED** - Cannot compile or run tests. Full Xcode 16+ is required but only Command Line Tools are installed.
 
 ## What Exists
 
-- SwiftUI Preview providers on all views for visual testing
+- SwiftUI Preview providers on all 25 views for visual testing
 - MockData.swift provides sample data for previews
-- All new views (DevReportsView, DevNotificationsView) have Preview providers
+- All new views have #Preview providers
 
 ## How to Test
 
 ### Prerequisites
 1. Install Xcode 16+ from the Mac App Store
 2. Run `xcode-select -s /Applications/Xcode.app/Contents/Developer`
-3. Open `MobileCommander.xcodeproj` in Xcode
-4. Wait for SPM to resolve Firebase and GoogleSignIn packages
-5. Replace `GoogleService-Info.plist` with real Firebase config for integration testing
+3. Run `xcodegen generate` to regenerate the project with new files
+4. Open `MobileCommander.xcodeproj` in Xcode
+5. Wait for SPM to resolve Firebase and GoogleSignIn packages
+6. Replace `GoogleService-Info.plist` with real Firebase config
 
 ### SwiftUI Previews
 Open any view file in Xcode and the canvas should render with mock data.
 
 ### Manual Test Checklist
 
-**Authentication**
-- [ ] Login screen appears when not authenticated
-- [ ] Google Sign-In flow works
-- [ ] Sign out returns to login
-
-**Developer Mode — Dashboard**
+**Developer Mode - Dashboard**
 - [ ] Stats grid filters recent tasks on tap
-- [ ] "View all" workers link works
-- [ ] "Activity Log" link works
-- [ ] Pull-to-refresh works
+- [ ] Project cards navigate to DevProjectDetailView
+- [ ] Quick links: Quota & Costs, Spreadsheet View, Activity Log
+- [ ] Worker fleet horizontal scroll
+- [ ] Pull-to-refresh
 
-**Developer Mode — Tasks**
+**Developer Mode - Tasks**
+- [ ] Select/Done toolbar toggle enters multi-select mode
+- [ ] Batch action bar appears with retry/delete buttons
+- [ ] Batch delete shows confirmation and deletes selected tasks
 - [ ] Status and project filters work
 - [ ] Search filters correctly
 - [ ] Context menu: retry, approve, delete
-- [ ] Delete shows confirmation dialog
 
-**Developer Mode — Task Detail**
-- [ ] Output, Chat, Follow Up, Info tabs all render
-- [ ] Menu actions all work with haptic feedback
+**Developer Mode - Task Detail**
+- [ ] Output, Chat, Follow Up, Info tabs render
+- [ ] Info tab: Edit button toggles inline editing
+- [ ] Inline edit saves project, path, priority, description, worker to Firestore
+- [ ] Menu actions work with haptic feedback
 - [ ] Delete confirmation dialog appears
-- [ ] Chat send button works
 
-**Developer Mode — Alerts**
-- [ ] Notifications grouped by type
-- [ ] Filters: All, Needs Attention, Completed, Running
-- [ ] Tap navigates to task detail
+**Developer Mode - Spreadsheet**
+- [ ] Column headers sort ascending/descending on tap
+- [ ] Status filter chips work
+- [ ] Horizontal scroll shows all columns
+- [ ] Tap row navigates to task detail
 
-**Developer Mode — Reports**
-- [ ] Time range filters: Today, 7 Days, 30 Days, All Time
-- [ ] Cost, duration, success rate metrics correct
-- [ ] Project and worker breakdowns render
-- [ ] Most expensive tasks sorted correctly
+**Developer Mode - Quota & Costs**
+- [ ] Today/All Time cost summary
+- [ ] Worker quota bars render with correct percentages
+- [ ] Rate limit warnings display for limited workers
+- [ ] Cost by project breakdown sums correctly
 
-**Owner Mode — Home**
+**Developer Mode - Project Detail**
+- [ ] Progress bar shows correct done/total
+- [ ] Status stat cards filter task list
+- [ ] Context menu actions (retry, approve, delete) work
+
+**Developer Mode - Alerts & Reports**
+- [ ] Notification filters by type
+- [ ] Report time range filters
+- [ ] Metrics calculations match expectations
+
+**Owner Mode - Home**
 - [ ] Sticky header with status message
 - [ ] Running task cards with live dot
-- [ ] Needs attention section
+- [ ] Quick resolve buttons: Looks Good, Needs Work, Try Again
+- [ ] Today timeline shows recent activity
 - [ ] Pull-to-refresh
 
-**Owner Mode — New Task**
+**Owner Mode - Messages**
+- [ ] Active conversations section with running tasks
+- [ ] Previous tasks section
+- [ ] Tap navigates to task detail view
+- [ ] Active tasks show "Tap to send a message" hint
+
+**Owner Mode - Activity**
+- [ ] Events grouped by Today/Yesterday/date
+- [ ] Friendly action descriptions (not raw action names)
+- [ ] Detail text shows task name or project
+
+**Owner Mode - New Task**
 - [ ] 6 templates fill description
-- [ ] Project chips and text field
 - [ ] Submit creates Firestore document
 - [ ] Success animation and haptic
 
-**Owner Mode — Task Detail**
-- [ ] Elapsed time ticker for running tasks
-- [ ] "Looks Good" / "Needs Work" buttons for review
-- [ ] Chat interface works
-- [ ] Retry with confirmation dialog
+**Shared**
+- [ ] Mode switching in Settings works (5 tabs each mode)
+- [ ] Auth flow (login/logout)
+- [ ] Pull-to-refresh on all scrollable views
 
 ### Unit Tests (to be added)
 - `DataStore` task filtering and computed properties
 - `CommanderTask.effectiveStatus` logic
 - `CommanderTask.durationString` formatting
 - `Date` extension formatting methods
-
-## Test Environment
-- iOS 17+ Simulator or device
-- Xcode 16+
-- Real Firebase config required for integration testing
-- Haptic feedback only testable on physical device

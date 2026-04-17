@@ -29,6 +29,7 @@ struct OwnerHomeView: View {
                     attentionSection
                     pendingSection
                     recentlyCompleted
+                    todayTimeline
                 }
                 .padding(.horizontal, 16)
                 .padding(.bottom, 32)
@@ -271,37 +272,61 @@ struct OwnerHomeView: View {
 
     private func attentionCard(_ task: CommanderTask) -> some View {
         CommanderCard {
-            HStack(spacing: 12) {
-                Image(systemName: task.effectiveStatus.icon)
-                    .font(.system(size: 20))
-                    .foregroundColor(task.effectiveStatus.color)
+            VStack(alignment: .leading, spacing: 10) {
+                HStack(spacing: 12) {
+                    Image(systemName: task.effectiveStatus.icon)
+                        .font(.system(size: 20))
+                        .foregroundColor(task.effectiveStatus.color)
 
-                VStack(alignment: .leading, spacing: 4) {
-                    Text(task.task)
-                        .font(.commanderBody)
-                        .foregroundColor(.commanderText)
-                        .lineLimit(1)
+                    VStack(alignment: .leading, spacing: 4) {
+                        Text(task.task)
+                            .font(.commanderBody)
+                            .foregroundColor(.commanderText)
+                            .lineLimit(1)
 
-                    HStack(spacing: 6) {
-                        StatusBadge(status: task.effectiveStatus)
-                        Text(task.project)
-                            .font(.commanderSmall)
-                            .foregroundColor(.commanderSecondary)
+                        HStack(spacing: 6) {
+                            StatusBadge(status: task.effectiveStatus)
+                            Text(task.project)
+                                .font(.commanderSmall)
+                                .foregroundColor(.commanderSecondary)
+                        }
+
+                        if let error = task.error {
+                            Text(error)
+                                .font(.commanderSmall)
+                                .foregroundColor(.commanderRed)
+                                .lineLimit(2)
+                        }
                     }
 
-                    if let error = task.error {
-                        Text(error)
-                            .font(.commanderSmall)
-                            .foregroundColor(.commanderRed)
-                            .lineLimit(2)
-                    }
+                    Spacer()
+
+                    Image(systemName: "chevron.right")
+                        .font(.system(size: 12))
+                        .foregroundColor(.commanderMuted)
                 }
 
-                Spacer()
-
-                Image(systemName: "chevron.right")
-                    .font(.system(size: 12))
-                    .foregroundColor(.commanderMuted)
+                HStack(spacing: 8) {
+                    if task.effectiveStatus == .needsReview {
+                        QuickActionButton(title: "Looks Good", icon: "hand.thumbsup.fill", color: .commanderGreen, isPrimary: true) {
+                            let impact = UIImpactFeedbackGenerator(style: .medium)
+                            impact.impactOccurred()
+                            Task { try? await store.approveTask(task) }
+                        }
+                        QuickActionButton(title: "Needs Work", icon: "arrow.uturn.backward", color: .commanderAmber) {
+                            let impact = UIImpactFeedbackGenerator(style: .medium)
+                            impact.impactOccurred()
+                            Task { try? await store.requestChanges(task) }
+                        }
+                    }
+                    if task.status == .failed || task.status == .blocked {
+                        QuickActionButton(title: "Try Again", icon: "arrow.clockwise", color: .commanderOrange, isPrimary: true) {
+                            let impact = UIImpactFeedbackGenerator(style: .medium)
+                            impact.impactOccurred()
+                            Task { try? await store.retryTask(task) }
+                        }
+                    }
+                }
             }
         }
     }
@@ -429,6 +454,76 @@ struct OwnerHomeView: View {
             RoundedRectangle(cornerRadius: 10)
                 .stroke(Color.commanderBorder, lineWidth: 0.5)
         )
+    }
+}
+
+    // MARK: - Today Timeline (palmr-inspired)
+
+    @ViewBuilder
+    private var todayTimeline: some View {
+        let todayActivities = store.activities.filter { event in
+            guard let ts = event.timestamp else { return false }
+            return Calendar.current.isDateInToday(ts)
+        }.prefix(8)
+
+        if !todayActivities.isEmpty {
+            VStack(alignment: .leading, spacing: 8) {
+                Text("Today")
+                    .font(.commanderCaptionMedium)
+                    .foregroundColor(.commanderSecondary)
+
+                ForEach(Array(todayActivities.enumerated()), id: \.element.id) { index, event in
+                    HStack(alignment: .top, spacing: 12) {
+                        TimelineDot(
+                            color: event.color,
+                            isLast: index == todayActivities.count - 1
+                        )
+
+                        VStack(alignment: .leading, spacing: 4) {
+                            HStack {
+                                Text(friendlyTimelineAction(event))
+                                    .font(.commanderCaption)
+                                    .foregroundColor(.commanderText)
+                                Spacer()
+                                if let ts = event.timestamp {
+                                    Text(ts.commanderTimeString)
+                                        .font(.commanderSmall)
+                                        .foregroundColor(.commanderMuted)
+                                }
+                            }
+                            if let detail = event.details["task_name"] ?? event.details["project"] {
+                                Text(detail)
+                                    .font(.commanderSmall)
+                                    .foregroundColor(.commanderSecondary)
+                            }
+                        }
+                        .padding(.bottom, 12)
+                    }
+                }
+            }
+        }
+    }
+
+    private func friendlyTimelineAction(_ event: ActivityEvent) -> String {
+        switch event.action {
+        case "task_created": return "New task submitted"
+        case "task_retried": return "Task retried"
+        case "chat_message_sent": return "Message sent"
+        case "task_status_changed":
+            if let status = event.details["new_status"] {
+                switch status {
+                case "done": return "Task completed"
+                case "failed": return "Task failed"
+                case "running": return "Task started"
+                default: return "Task updated"
+                }
+            }
+            return "Task updated"
+        case "task_deleted": return "Task removed"
+        case "task_approved": return "Task approved"
+        case "task_changes_requested": return "Changes requested"
+        default: return event.displayAction
+        }
     }
 }
 

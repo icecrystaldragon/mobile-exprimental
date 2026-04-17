@@ -219,6 +219,141 @@ struct EmptyStateView: View {
     }
 }
 
+// MARK: - Filter Chip (moved from DevTaskListView for shared use)
+// FilterChip is defined in DevTaskListView.swift
+
+// MARK: - Timeline Dot (for activity timelines)
+
+struct TimelineDot: View {
+    let color: Color
+    var isLast: Bool = false
+
+    var body: some View {
+        VStack(spacing: 0) {
+            Circle()
+                .fill(color)
+                .frame(width: 10, height: 10)
+            if !isLast {
+                Rectangle()
+                    .fill(Color.commanderBorder.opacity(0.3))
+                    .frame(width: 1)
+                    .frame(maxHeight: .infinity)
+            }
+        }
+        .frame(width: 10)
+    }
+}
+
+// MARK: - Quick Action Button
+
+struct QuickActionButton: View {
+    let title: String
+    let icon: String
+    let color: Color
+    var isPrimary: Bool = false
+    let action: () -> Void
+
+    var body: some View {
+        Button(action: action) {
+            HStack(spacing: 6) {
+                Image(systemName: icon)
+                    .font(.system(size: 12))
+                Text(title)
+                    .font(.commanderCaptionMedium)
+            }
+            .foregroundColor(isPrimary ? .white : color)
+            .padding(.horizontal, 12)
+            .padding(.vertical, 8)
+            .background(isPrimary ? color : color.opacity(0.15))
+            .cornerRadius(8)
+        }
+        .buttonStyle(.plain)
+    }
+}
+
+// MARK: - Compact Stat Row
+
+struct CompactStatRow: View {
+    let icon: String
+    let label: String
+    let value: String
+    var color: Color = .commanderSecondary
+
+    var body: some View {
+        HStack(spacing: 8) {
+            Image(systemName: icon)
+                .font(.system(size: 12))
+                .foregroundColor(color)
+                .frame(width: 20)
+            Text(label)
+                .font(.commanderCaption)
+                .foregroundColor(.commanderSecondary)
+            Spacer()
+            Text(value)
+                .font(.commanderCaptionMedium)
+                .foregroundColor(.commanderText)
+        }
+    }
+}
+
+// MARK: - Section Header
+
+struct SectionHeader: View {
+    let title: String
+    var trailing: String? = nil
+    var trailingAction: (() -> Void)? = nil
+
+    var body: some View {
+        HStack {
+            Text(title)
+                .font(.commanderCaptionMedium)
+                .foregroundColor(.commanderSecondary)
+            Spacer()
+            if let trailing = trailing {
+                Button {
+                    trailingAction?()
+                } label: {
+                    Text(trailing)
+                        .font(.commanderSmall)
+                        .foregroundColor(.commanderOrange)
+                }
+                .buttonStyle(.plain)
+            }
+        }
+    }
+}
+
+// MARK: - Inline Edit Field
+
+struct InlineEditField: View {
+    let label: String
+    @Binding var text: String
+    var placeholder: String = ""
+    var isEditing: Bool
+    var onCommit: () -> Void = {}
+
+    var body: some View {
+        HStack {
+            Text(label)
+                .font(.commanderCaption)
+                .foregroundColor(.commanderSecondary)
+                .frame(width: 80, alignment: .leading)
+            if isEditing {
+                TextField(placeholder, text: $text)
+                    .font(.commanderCaption)
+                    .foregroundColor(.commanderText)
+                    .textFieldStyle(.plain)
+                    .onSubmit { onCommit() }
+            } else {
+                Text(text.isEmpty ? "—" : text)
+                    .font(.commanderCaption)
+                    .foregroundColor(.commanderText)
+            }
+            Spacer()
+        }
+    }
+}
+
 // MARK: - Date Extensions
 
 extension Date {
