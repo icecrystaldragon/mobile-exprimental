@@ -21,17 +21,22 @@
 4. Copy the `GIDClientID` from the plist into `project.yml` and `Info.plist`
 5. Set `REVERSED_CLIENT_ID` (reverse the client ID segments)
 
-## 3. GitHub Remote Not Configured
-**Status**: BLOCKED
-**Impact**: Cannot push to GitHub
-**Resolution**:
+## 3. GitHub Push: Needs Auth Re-login
+**Status**: BLOCKED — `gh` CLI token expired, needs interactive browser login
+**Impact**: Cannot create repo or push to GitHub
+**What was tried**: SSH works (authenticates as `palmr-jing`), but the repo `palmr-jing/mobile-exprimental` doesn't exist on GitHub. Creating it requires `gh` API access, and the token for `realeverbor` is invalid/expired. Device code auth was attempted but requires user to complete browser flow.
+**Resolution** (run from this directory):
 ```bash
-# Option 1: Use gh CLI
+./push-to-github.sh
+```
+Or manually:
+```bash
+gh auth login --hostname github.com --git-protocol ssh --web
 gh repo create mobile-exprimental --public --source=. --push
-
-# Option 2: Create repo on github.com manually, then:
-git remote add origin https://github.com/<user>/mobile-exprimental.git
-git push -u origin main
+```
+Then on macbook-air-3:
+```bash
+git clone git@github.com:<your-username>/mobile-exprimental.git
 ```
 
 ## 4. XcodeGen Regeneration Needed After New Files
